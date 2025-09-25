@@ -8,38 +8,59 @@ const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
 function SeriesList() {
     const [series, setSeries] = useState([]);
-    const [filteredSeries, setFilteredSeries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const fetchSeries = async () => {
-            try {
-                setLoading(true);
-                const res = await fetch(`${BASE_URL}/tv/popular?api_key=${API_KEY}&language=pt-BR&page=1`);
-                if (!res.ok) throw new Error("Erro ao buscar séries.");
-                const data = await res.json();
-                setSeries(data.results);
-                setFilteredSeries(data.results);
-            } catch (err) {
-                console.error(err);
-                setError("Erro ao carregar séries.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchSeries();
-    }, []);
+    const fetchPopular = async () => {
+        try {
+            setLoading(true);
+            let allSeries = [];
+            let page = 1;
 
-    const handleSearch = (query) => {
-        const filtered = series.filter((s) =>
-            s.name.toLowerCase().includes(query.toLowerCase())
-        );
-        setFilteredSeries(filtered);
+            while (allSeries.length < 50) {
+                const res = await fetch(`${BASE_URL}/tv/popular?api_key=${API_KEY}&language=pt-BR&page=${page}`);
+                if (!res.ok) throw new Error("Erro ao carregar séries.");
+                const data = await res.json();
+                allSeries = [...allSeries, ...(data.results || [])];
+                if (page >= data.total_pages) break;
+                page++;
+            }
+
+            setSeries(allSeries.slice(0, 50));
+            setError(null);
+        } catch (err) {
+            console.error(err);
+            setError("Erro ao carregar séries.");
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const searchSeries = async (query) => {
+        try {
+            setLoading(true);
+
+            if (!query) return fetchPopular();
+
+            const res = await fetch(`${BASE_URL}/search/tv?api_key=${API_KEY}&language=pt-BR&page=1&query=${encodeURIComponent(query)}`);
+            if (!res.ok) throw new Error("Erro na busca.");
+            const data = await res.json();
+            setSeries(data.results || []);
+            setError(null);
+        } catch (err) {
+            console.error(err);
+            setSeries([]);
+            setError("Erro na busca.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchPopular(); }, []);
 
     if (loading) return <p style={{ textAlign: "center", padding: "2rem", color: "white" }}>Carregando séries...</p>;
     if (error) return <p style={{ textAlign: "center", padding: "2rem", color: "red" }}>{error}</p>;
+    if (!series.length) return <p style={{ textAlign: "center", padding: "2rem", color: "white" }}>Nenhuma série encontrada.</p>;
 
     return (
         <div style={{
@@ -50,16 +71,15 @@ function SeriesList() {
         }}>
             <h1 style={{ textAlign: "center", marginBottom: "2rem", fontSize: "2rem" }}>Séries Populares</h1>
 
-            <div style={{ maxWidth: 400, margin: "0 auto 2rem" }}>
-                <SearchBar onSearch={handleSearch} />
-            </div>
+            <SearchBar onSearch={searchSeries} />
 
             <div style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                gap: "2rem"
+                gap: "2rem",
+                marginTop: "2rem"
             }}>
-                {filteredSeries.map((s) => (
+                {series.map((s) => (
                     <Link
                         key={s.id}
                         to={`/series/${s.id}`}
@@ -104,15 +124,6 @@ function SeriesList() {
                             )}
                             <div style={{ padding: "1rem" }}>
                                 <h2 style={{ fontSize: "1.2rem", marginBottom: "0.5rem" }}>{s.name}</h2>
-                                <p style={{
-                                    fontSize: "0.9rem",
-                                    height: "60px",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis"
-                                }}>
-                                    {s.overview || "Sem descrição disponível."}
-                                </p>
-
                                 <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "0.5rem", fontSize: "0.85rem" }}>
                                     {s.first_air_date && (
                                         <span style={{
@@ -135,12 +146,16 @@ function SeriesList() {
                                         </span>
                                     )}
                                 </div>
-
-                                {s.genres && s.genres.length > 0 && (
-                                    <p style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#d1d5db" }}>
-                                        <strong>Gêneros:</strong> {s.genres.map(g => g.name).join(", ")}
-                                    </p>
-                                )}
+                                <p style={{
+                                    marginTop: "0.5rem",
+                                    fontSize: "0.85rem",
+                                    color: "#d1d5db",
+                                    height: "50px",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis"
+                                }}>
+                                    {s.overview || "Sem descrição disponível."}
+                                </p>
                             </div>
                         </div>
                     </Link>
