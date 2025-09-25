@@ -165,13 +165,34 @@ export default function Home() {
 
     useEffect(() => fetchPopular(), []);
 
-    const fetchPopular = () => {
-        setLoading(true);
-        setSearchMode(false);
-        fetch(`${BASE_URL}/movie/popular?api_key=${API_KEY}&language=pt-BR&page=1`)
-            .then(res => res.json())
-            .then(data => { setMovies(data.results || []); setLoading(false); setError(null); })
-            .catch(() => { setError("Erro ao carregar filmes."); setLoading(false); });
+    const fetchPopular = async () => {
+        try {
+            setLoading(true);
+            setSearchMode(false);
+
+            let allMovies = [];
+            let page = 1;
+
+            // Enquanto não tiver pelo menos 50 filmes
+            while (allMovies.length < 50) {
+                const res = await fetch(`${BASE_URL}/movie/popular?api_key=${API_KEY}&language=pt-BR&page=${page}`);
+                if (!res.ok) throw new Error("Erro ao carregar filmes.");
+                const data = await res.json();
+                allMovies = [...allMovies, ...(data.results || [])];
+
+                // Se não tiver mais páginas, sai do loop
+                if (page >= data.total_pages) break;
+                page++;
+            }
+
+            setMovies(allMovies.slice(0, 50)); // pega só 50
+            setError(null);
+        } catch (err) {
+            console.error(err);
+            setError("Erro ao carregar filmes.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSearch = (query) => {
