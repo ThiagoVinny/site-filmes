@@ -26,13 +26,6 @@ const icons = {
             <line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
     ),
-    film: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-            <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
-    ),
     loader: (
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
             <line x1="12" y1="2" x2="12" y2="6"/>
@@ -47,7 +40,7 @@ const icons = {
     ),
 };
 
-// ---------- COMPONENTES ----------
+// ---------- SEARCH BAR ----------
 const SearchBar = ({ onSearch }) => {
     const [query, setQuery] = useState("");
     const handleSearch = () => onSearch(query.trim());
@@ -55,9 +48,9 @@ const SearchBar = ({ onSearch }) => {
 
     return (
         <div style={{ maxWidth: 600, margin: "0 auto 2rem", position: "relative" }}>
-      <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
-        {icons.search}
-      </span>
+            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
+                {icons.search}
+            </span>
             <input
                 type="text"
                 value={query}
@@ -115,31 +108,38 @@ const SearchBar = ({ onSearch }) => {
     );
 };
 
+// ---------- MOVIE CARD ----------
 const MovieCard = ({ movie }) => {
     const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
     const rating = movie.vote_average ? movie.vote_average.toFixed(1) : "N/A";
 
     return (
-        <Link to={`/movie/${movie.id}`} style={{ textDecoration: "none" }}>
+        <Link to={`/movie/${movie.id}`} style={{ textDecoration: "none", color: "inherit" }}>
             <div style={{
-                backgroundColor: "rgba(0,0,0,0.4)",
+                backgroundColor: "rgba(30,41,59,0.8)",
                 borderRadius: 16,
                 overflow: "hidden",
                 cursor: "pointer",
-                transition: "0.3s",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
+                transition: "transform 0.3s, box-shadow 0.3s",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.5)"
             }}
-                 onMouseEnter={e => e.currentTarget.style.transform="scale(1.05)"}
-                 onMouseLeave={e => e.currentTarget.style.transform="scale(1)"}
+                 onMouseEnter={e => {
+                     e.currentTarget.style.transform = "scale(1.05)";
+                     e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.6)";
+                 }}
+                 onMouseLeave={e => {
+                     e.currentTarget.style.transform = "scale(1)";
+                     e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.5)";
+                 }}
             >
                 <img
                     src={movie.poster_path ? `${IMAGE_BASE_URL}${movie.poster_path}` : ""}
                     alt={movie.title}
                     style={{ width: "100%", height: 350, objectFit: "cover" }}
                 />
-                <div style={{ padding: 12, color: "white" }}>
+                <div style={{ padding: 12 }}>
                     <h3 style={{ fontSize: 16, marginBottom: 4 }}>{movie.title}</h3>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
+                    <div style={{ display: "flex", gap: 12, alignItems: "center", fontSize: 14 }}>
                         {icons.calendar} <span>{releaseYear}</span>
                         {icons.star} <span>{rating}</span>
                     </div>
@@ -149,6 +149,7 @@ const MovieCard = ({ movie }) => {
     );
 };
 
+// ---------- LOADING ----------
 const LoadingSpinner = () => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "5rem 0", color: "white" }}>
         <div style={{ marginBottom: 16 }}>{icons.loader}</div>
@@ -161,31 +162,25 @@ export default function Home() {
     const [movies, setMovies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [searchMode, setSearchMode] = useState(false);
 
     useEffect(() => fetchPopular(), []);
 
     const fetchPopular = async () => {
         try {
             setLoading(true);
-            setSearchMode(false);
-
             let allMovies = [];
             let page = 1;
 
-            // Enquanto não tiver pelo menos 50 filmes
             while (allMovies.length < 50) {
                 const res = await fetch(`${BASE_URL}/movie/popular?api_key=${API_KEY}&language=pt-BR&page=${page}`);
                 if (!res.ok) throw new Error("Erro ao carregar filmes.");
                 const data = await res.json();
                 allMovies = [...allMovies, ...(data.results || [])];
-
-                // Se não tiver mais páginas, sai do loop
                 if (page >= data.total_pages) break;
                 page++;
             }
 
-            setMovies(allMovies.slice(0, 50)); // pega só 50
+            setMovies(allMovies.slice(0, 50));
             setError(null);
         } catch (err) {
             console.error(err);
@@ -198,7 +193,6 @@ export default function Home() {
     const handleSearch = (query) => {
         if (!query) return fetchPopular();
         setLoading(true);
-        setSearchMode(true);
         fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&language=pt-BR&query=${encodeURIComponent(query)}`)
             .then(res => res.json())
             .then(data => { setMovies(data.results || []); setLoading(false); setError(null); })
@@ -207,5 +201,19 @@ export default function Home() {
 
     return (
         <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#0f172a 0%,#581c87 50%,#0f172a 100%)", color: "white", padding: "2rem 1rem" }}>
-            <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+            <h1 style={{ textAlign: "center", marginBottom: 24, fontSize: "2rem" }}>Filmes Populares</h1>
+            <SearchBar onSearch={handleSearch} />
 
+            {loading ? <LoadingSpinner /> :
+                error ? <p style={{ textAlign: "center", color: "red" }}>{error}</p> :
+                    <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                        gap: 24
+                    }}>
+                        {movies.map(movie => <MovieCard key={movie.id} movie={movie} />)}
+                    </div>
+            }
+        </div>
+    );
+}

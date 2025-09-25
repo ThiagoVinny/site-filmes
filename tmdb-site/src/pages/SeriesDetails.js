@@ -82,19 +82,31 @@ const SeriesDetails = () => {
                 padding: "1rem",
                 backgroundColor: "rgba(0,0,0,0.4)"
             }}>
-                <img
-                    src={serie.poster_path ? `${IMAGE_BASE_URL}${serie.poster_path}` : ""}
-                    alt={serie.name}
-                    style={{ width: "300px", borderRadius: "1rem" }}
-                />
+                {serie.poster_path && (
+                    <img
+                        src={`${IMAGE_BASE_URL}${serie.poster_path}`}
+                        alt={serie.name}
+                        style={{ width: "300px", borderRadius: "1rem" }}
+                    />
+                )}
 
                 <div style={{ maxWidth: "600px" }}>
                     <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>{serie.name}</h1>
+
                     <p style={{ marginBottom: "0.5rem", fontStyle: "italic" }}>
-                        {serie.first_air_date ? `Estreia: ${serie.first_air_date}` : ""}
+                        {serie.first_air_date ? `Estreia: ${serie.first_air_date}` : ""}{" "}
+                        {serie.last_air_date ? ` | Último episódio: ${serie.last_air_date}` : ""}
                     </p>
-                    <p style={{ marginBottom: "1rem" }}>{serie.overview || "Sem descrição disponível."}</p>
-                    <p style={{ marginBottom: "0.5rem" }}>Nota: ⭐ {serie.vote_average?.toFixed(1) || "N/A"} ({serie.vote_count} votos)</p>
+
+                    {serie.status && (
+                        <p style={{ marginBottom: "0.5rem" }}><strong>Status:</strong> {serie.status}</p>
+                    )}
+
+                    {serie.number_of_seasons !== undefined && serie.number_of_episodes !== undefined && (
+                        <p style={{ marginBottom: "0.5rem" }}>
+                            <strong>Temporadas/Episódios:</strong> {serie.number_of_seasons} / {serie.number_of_episodes}
+                        </p>
+                    )}
 
                     {serie.genres && (
                         <p style={{ marginBottom: "0.5rem" }}>
@@ -102,9 +114,31 @@ const SeriesDetails = () => {
                         </p>
                     )}
 
+                    {serie.original_language && (
+                        <p style={{ marginBottom: "0.5rem" }}>
+                            <strong>Idioma Original:</strong> {serie.original_language.toUpperCase()}
+                        </p>
+                    )}
+
+                    {serie.production_companies && serie.production_companies.length > 0 && (
+                        <p style={{ marginBottom: "0.5rem" }}>
+                            <strong>Produtoras:</strong> {serie.production_companies.map(p => p.name).join(", ")}
+                        </p>
+                    )}
+
+                    {serie.networks && serie.networks.length > 0 && (
+                        <p style={{ marginBottom: "0.5rem" }}>
+                            <strong>Exibido em:</strong> {serie.networks.map(n => n.name).join(", ")}
+                        </p>
+                    )}
+
+                    <p style={{ marginBottom: "1rem" }}>{serie.overview || "Sem descrição disponível."}</p>
+
+                    <p style={{ marginBottom: "0.5rem" }}>Nota: ⭐ {serie.vote_average?.toFixed(1) || "N/A"} ({serie.vote_count} votos)</p>
+
                     {cast.length > 0 && (
                         <p style={{ marginBottom: "0.5rem" }}>
-                            <strong>Elenco:</strong> {cast.map(c => c.name).join(", ")}
+                            <strong>Elenco principal:</strong> {cast.map(c => c.name).join(", ")}
                         </p>
                     )}
 
