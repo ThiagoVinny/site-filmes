@@ -4,7 +4,7 @@ const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 const API_KEY = "ee4baf041aa87a38a21cb891835ae1ca";
 const BASE_URL = "https://api.themoviedb.org/3";
 
-const MovieCard = ({ movie }) => {
+const SeriesCard = ({ movie }) => {
     const [cast, setCast] = useState([]);
     const [genres, setGenres] = useState([]);
 
@@ -43,4 +43,4 @@ const MovieCard = ({ movie }) => {
     );
 };
 
-export default MovieCard;
+export default SeriesCard;
