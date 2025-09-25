@@ -5,10 +5,10 @@ const API_KEY = "ee4baf041aa87a38a21cb891835ae1ca";
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-const MovieDetails = () => {
+const SeriesDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [movie, setMovie] = useState(null);
+    const [serie, setSerie] = useState(null);
     const [cast, setCast] = useState([]);
     const [video, setVideo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -19,19 +19,19 @@ const MovieDetails = () => {
             try {
                 setLoading(true);
 
-                // Detalhes do filme
-                const resMovie = await fetch(`${BASE_URL}/movie/${id}?api_key=${API_KEY}&language=pt-BR`);
-                if (!resMovie.ok) throw new Error("Erro ao buscar detalhes do filme.");
-                const movieData = await resMovie.json();
-                setMovie(movieData);
+                // Detalhes da série
+                const resSerie = await fetch(`${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=pt-BR`);
+                if (!resSerie.ok) throw new Error("Erro ao buscar detalhes da série.");
+                const serieData = await resSerie.json();
+                setSerie(serieData);
 
                 // Elenco
-                const resCast = await fetch(`${BASE_URL}/movie/${id}/credits?api_key=${API_KEY}`);
+                const resCast = await fetch(`${BASE_URL}/tv/${id}/credits?api_key=${API_KEY}`);
                 const castData = await resCast.json();
                 setCast(castData.cast?.slice(0, 5) || []);
 
                 // Trailer
-                const resVideo = await fetch(`${BASE_URL}/movie/${id}/videos?api_key=${API_KEY}&language=pt-BR`);
+                const resVideo = await fetch(`${BASE_URL}/tv/${id}/videos?api_key=${API_KEY}&language=pt-BR`);
                 const videoData = await resVideo.json();
                 const trailer = videoData.results?.find(v => v.type === "Trailer" && v.site === "YouTube");
                 setVideo(trailer);
@@ -47,9 +47,9 @@ const MovieDetails = () => {
         fetchDetails();
     }, [id]);
 
-    if (loading) return <p style={{ color: "white", textAlign: "center", padding: "2rem" }}>Carregando filme...</p>;
+    if (loading) return <p style={{ color: "white", textAlign: "center", padding: "2rem" }}>Carregando série...</p>;
     if (error) return <p style={{ color: "red", textAlign: "center", padding: "2rem" }}>{error}</p>;
-    if (!movie) return null;
+    if (!serie) return null;
 
     return (
         <div style={{
@@ -83,22 +83,22 @@ const MovieDetails = () => {
                 backgroundColor: "rgba(0,0,0,0.4)"
             }}>
                 <img
-                    src={movie.poster_path ? `${IMAGE_BASE_URL}${movie.poster_path}` : ""}
-                    alt={movie.title}
+                    src={serie.poster_path ? `${IMAGE_BASE_URL}${serie.poster_path}` : ""}
+                    alt={serie.name}
                     style={{ width: "300px", borderRadius: "1rem" }}
                 />
 
                 <div style={{ maxWidth: "600px" }}>
-                    <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>{movie.title}</h1>
+                    <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>{serie.name}</h1>
                     <p style={{ marginBottom: "0.5rem", fontStyle: "italic" }}>
-                        {movie.release_date ? `Lançamento: ${movie.release_date}` : ""}
+                        {serie.first_air_date ? `Estreia: ${serie.first_air_date}` : ""}
                     </p>
-                    <p style={{ marginBottom: "1rem" }}>{movie.overview || "Sem descrição disponível."}</p>
-                    <p style={{ marginBottom: "0.5rem" }}>Nota: ⭐ {movie.vote_average?.toFixed(1) || "N/A"} ({movie.vote_count} votos)</p>
+                    <p style={{ marginBottom: "1rem" }}>{serie.overview || "Sem descrição disponível."}</p>
+                    <p style={{ marginBottom: "0.5rem" }}>Nota: ⭐ {serie.vote_average?.toFixed(1) || "N/A"} ({serie.vote_count} votos)</p>
 
-                    {movie.genres && (
+                    {serie.genres && (
                         <p style={{ marginBottom: "0.5rem" }}>
-                            <strong>Gêneros:</strong> {movie.genres.map(g => g.name).join(", ")}
+                            <strong>Gêneros:</strong> {serie.genres.map(g => g.name).join(", ")}
                         </p>
                     )}
 
@@ -129,4 +129,4 @@ const MovieDetails = () => {
     );
 };
 
-export default MovieDetails;
+export default SeriesDetails;
