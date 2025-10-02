@@ -5,7 +5,6 @@ const API_KEY = "ee4baf041aa87a38a21cb891835ae1ca";
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-// ---------- ÍCONES ----------
 const icons = {
     search: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -40,7 +39,6 @@ const icons = {
     ),
 };
 
-// ---------- SEARCH BAR ----------
 const SearchBar = ({ onSearch }) => {
     const [query, setQuery] = useState("");
     const handleSearch = () => onSearch(query.trim());
@@ -149,7 +147,6 @@ const MovieCard = ({ movie }) => {
     );
 };
 
-// ---------- LOADING ----------
 const LoadingSpinner = () => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "5rem 0", color: "white" }}>
         <div style={{ marginBottom: 16 }}>{icons.loader}</div>
@@ -157,7 +154,6 @@ const LoadingSpinner = () => (
     </div>
 );
 
-// ---------- HOME ----------
 export default function Home() {
     const [movies, setMovies] = useState([]);
     const [loading, setLoading] = useState(true);

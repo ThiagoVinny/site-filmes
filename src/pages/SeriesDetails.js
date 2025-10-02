@@ -19,18 +19,15 @@ const SeriesDetails = () => {
             try {
                 setLoading(true);
 
-                // Detalhes da série
                 const resSerie = await fetch(`${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=pt-BR`);
                 if (!resSerie.ok) throw new Error("Erro ao buscar detalhes da série.");
                 const serieData = await resSerie.json();
                 setSerie(serieData);
 
-                // Elenco
                 const resCast = await fetch(`${BASE_URL}/tv/${id}/credits?api_key=${API_KEY}`);
                 const castData = await resCast.json();
                 setCast(castData.cast?.slice(0, 5) || []);
 
-                // Trailer
                 const resVideo = await fetch(`${BASE_URL}/tv/${id}/videos?api_key=${API_KEY}&language=pt-BR`);
                 const videoData = await resVideo.json();
                 const trailer = videoData.results?.find(v => v.type === "Trailer" && v.site === "YouTube");
