@@ -34,7 +34,6 @@ export default function Header() {
                     to="/"
                     style={{ color: "#e5e7eb", textDecoration: "none", fontWeight: 600, fontSize: "1.1rem" }}
                 >
-                    Site Filmes
                 </Link>
                 {user && (
                     <>
