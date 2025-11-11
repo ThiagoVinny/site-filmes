@@ -360,7 +360,7 @@ export default function Home() {
                     WebkitTextFillColor: "transparent",
                     marginBottom: 8
                 }}>
-                    🎬 Cinefly
+                    🎬 Cinefy
                 </h1>
                 <p style={{ color: "#94a3b8", fontSize: 16 }}>Descubra as melhores séries do momento</p>
             </div>

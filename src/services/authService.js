@@ -1,34 +1,29 @@
-const KEY = "mock_users";
+import { apiFetch } from "./api";
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+async function login(email, password) {
+    const data = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+    });
 
-const getUsers = () => JSON.parse(localStorage.getItem(KEY) || "[]");
-const saveUsers = (u) => localStorage.setItem(KEY, JSON.stringify(u));
+    return data;
+}
 
-export default {
-    login: async (email, password) => {
-        await delay(600);
-        const users = getUsers();
-        const user = users.find((u) => u.email === email && u.password === password);
-        if (!user) return { error: "Credenciais inválidas" };
-        const token = btoa(`${email}:${Date.now()}`);
-        return { user: { id: user.id, email: user.email }, token };
-    },
+async function register(email, password) {
+    const data = await apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+    });
 
-    register: async (email, password) => {
-        await delay(600);
-        const users = getUsers();
-        if (users.find((u) => u.email === email)) return { error: "Email já cadastrado" };
-        const id = Date.now();
-        users.push({ id, email, password });
-        saveUsers(users);
-        const token = btoa(`${email}:${Date.now()}`);
-        return { user: { id, email }, token };
-    },
+    return data;
+}
 
-    recover: async (email) => {
-        await delay(600);
-        // Simula envio de email
-        return { message: "Se o e-mail estiver cadastrado, você receberá instruções." };
-    },
-};
+async function recover(email) {
+    console.log("Recover solicitado para:", email);
+    return { message: "Se o email existir, enviaremos instruções de recuperação." };
+}
+
+const authService = { login, register, recover };
+export default authService;
+
+export { login, register, recover };
