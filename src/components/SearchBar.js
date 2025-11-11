@@ -9,7 +9,6 @@ const icons = {
     ),
 };
 
-// AQUI já é o default export
 export default function SearchBar({ onSearch }) {
     const [input, setInput] = useState("");
 

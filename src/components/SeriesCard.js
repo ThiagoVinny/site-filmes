@@ -12,13 +12,12 @@ const SeriesCard = ({ movie }) => {
     const rating = movie.vote_average ? movie.vote_average.toFixed(1) : "N/A";
 
     useEffect(() => {
-        // Buscar detalhes do filme
+
         fetch(`${BASE_URL}/movie/${movie.id}?api_key=${API_KEY}&language=pt-BR`)
             .then(res => res.json())
             .then(data => setGenres(data.genres || []))
             .catch(err => console.error(err));
 
-        // Buscar elenco
         fetch(`${BASE_URL}/movie/${movie.id}/credits?api_key=${API_KEY}`)
             .then(res => res.json())
             .then(data => setCast(data.cast?.slice(0, 3) || [])) // pegar top 3 atores
