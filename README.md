@@ -167,17 +167,3 @@ site-filmes/
 ## 🪪 Licença
 
 Distribuído sob a licença **MIT**.
-Sinta-se livre para usar, modificar e contribuir com o projeto.
-
----
-
-✨ *“Feito com paixão por cinema e umas boas linhas de código.”* 🎥
-
-```
-
----
-
-💡 **Dica:**  
-Se quiser, posso adicionar ao final uma seção de **Deploy na Vercel (frontend)** + **Render ou Railway (backend)**, com passo a passo pra publicar teu projeto full-stack online.  
-Quer que eu monte essa parte também?
-```
