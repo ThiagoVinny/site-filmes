@@ -1,70 +1,183 @@
-# Getting Started with Create React App
+# 🎬 Site Filmes — Plataforma de Avaliação de Séries e Filmes
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+````git
 
-## Available Scripts
+![React](https://img.shields.io/badge/Frontend-React-blue?logo=react)
+![Node.js](https://img.shields.io/badge/Backend-Node.js-green?logo=node.js)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue?logo=postgresql)
+![TMDB API](https://img.shields.io/badge/API-TMDB-orange?logo=themoviedatabase)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
-In the project directory, you can run:
+> Projeto full-stack desenvolvido em **React + Node.js + PostgreSQL**, com integração à **API TMDB** para exibir e avaliar séries e filmes.  
+> Os usuários podem criar pastas, comentar, avaliar e gerenciar suas próprias listas.
+
+---
+
+## 🚀 Começando
+
+Este projeto foi inicializado com [Create React App](https://github.com/facebook/create-react-app) e expandido com backend em Node.js + banco PostgreSQL.
+
+### 📦 Instalação
+
+Clone o repositório e instale as dependências:
+
+```bash
+git clone https://github.com/SEU_USUARIO/site-filmes.git
+cd site-filmes
+npm install
+````
+
+Para instalar o backend:
+
+```bash
+cd server
+npm install
+```
+
+---
+
+## ⚙️ Configuração
+
+### 🔐 Backend (.env)
+
+Crie o arquivo `.env` dentro da pasta `server`:
+
+```env
+PORT=4000
+PGHOST=localhost
+PGPORT=5432
+PGUSER=postgres
+PGPASSWORD=sua_senha
+PGDATABASE=site_filmes
+JWT_SECRET=sua_chave_super_secreta
+JWT_EXPIRES_IN=7d
+```
+
+Rode o servidor:
+
+```bash
+node index.js
+```
+
+O backend rodará em: [http://localhost:4000](http://localhost:4000)
+
+---
+
+### 🌐 Frontend (.env)
+
+Crie o arquivo `.env` na raiz do projeto React:
+
+```env
+REACT_APP_API_KEY=SEU_TOKEN_DA_TMDB
+REACT_APP_BASE_URL=https://api.themoviedb.org/3
+REACT_APP_IMAGE_BASE_URL=https://image.tmdb.org/t/p/w500
+REACT_APP_API_BASE_URL=http://localhost:4000
+```
+
+Inicie o frontend:
+
+```bash
+npm start
+```
+
+Abra [http://localhost:3000](http://localhost:3000) no navegador.
+
+---
+
+## 🧠 Principais Funcionalidades
+
+* 🔐 **Autenticação de usuários (login e registro com JWT)**
+* 🎞️ **Busca e exibição de séries/filmes via TMDB**
+* 🧾 **Criação e exclusão de pastas personalizadas**
+* 💬 **Sistema de avaliações e comentários**
+* ⭐ **Notas individuais por usuário**
+* 🧍‍♂️ **Perfil com abas:**
+
+  * Perfil
+  * Avaliações
+  * Séries assistidas
+
+---
+
+## 🧩 Scripts Disponíveis
+
+No diretório do projeto (frontend), você pode rodar:
 
 ### `npm start`
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Executa o app em modo de desenvolvimento.
+Abra [http://localhost:3000](http://localhost:3000).
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Cria o build otimizado para produção dentro da pasta `build`.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### `npm test`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Executa os testes interativos (se houver configurados).
 
 ### `npm run eject`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Exibe todas as configurações internas do Create React App (irreversível).
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 📁 Estrutura do Projeto
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```
+site-filmes/
+├── server/                # Backend Node.js + Express + PostgreSQL
+│   ├── routes/            # Rotas (auth, folders, reviews)
+│   ├── db.js              # Conexão com o banco
+│   ├── index.js           # Ponto de entrada da API
+│   └── .env               # Variáveis de ambiente
+│
+├── src/                   # Frontend React
+│   ├── components/        # Componentes reutilizáveis
+│   ├── context/           # Context API (Auth)
+│   ├── pages/             # Páginas (Home, Login, Register, Profile, etc.)
+│   ├── services/          # Comunicação com o backend
+│   ├── App.js             # Rotas principais
+│   └── index.js           # Ponto de entrada
+│
+├── .env                   # Configurações da API TMDB e servidor local
+└── README.md
+```
 
-## Learn More
+---
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 🧠 Próximas Features
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+* [ ] Upload de foto de perfil
+* [ ] Sistema de curtidas em comentários
+* [ ] Modo escuro/claro
+* [ ] Rankings de séries mais avaliadas
+* [ ] Seguir outros usuários
 
-### Code Splitting
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 🧑‍💻 Autor
 
-### Analyzing the Bundle Size
+**Thiago Vinny**
+📧 [thiagovinny.dev@gmail.com](mailto:thiagovinny.dev@gmail.com)
+🌐 [github.com/ThiagoVinny](https://github.com/ThiagoVinny)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+---
 
-### Making a Progressive Web App
+## 🪪 Licença
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Distribuído sob a licença **MIT**.
+Sinta-se livre para usar, modificar e contribuir com o projeto.
 
-### Advanced Configuration
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+✨ *“Feito com paixão por cinema e umas boas linhas de código.”* 🎥
 
-### Deployment
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+---
 
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+💡 **Dica:**  
+Se quiser, posso adicionar ao final uma seção de **Deploy na Vercel (frontend)** + **Render ou Railway (backend)**, com passo a passo pra publicar teu projeto full-stack online.  
+Quer que eu monte essa parte também?
+```
