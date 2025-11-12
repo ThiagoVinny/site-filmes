@@ -17,16 +17,10 @@ export default function Ranking() {
     const fetchRanking = async () => {
         try {
             setLoading(true);
-            // Endpoint top rated
-            const res = await fetch(
-                `${BASE_URL}/tv/top_rated?api_key=${API_KEY}&language=pt-BR&page=1`
-            );
+            const res = await fetch(`${BASE_URL}/tv/top_rated?api_key=${API_KEY}&language=pt-BR&page=1`);
             if (!res.ok) throw new Error("Erro ao carregar ranking.");
             const data = await res.json();
-
-            // Pegar apenas as 10 primeiras
-            const top10 = (data.results || []).slice(0, 10);
-            setSeries(top10);
+            setSeries((data.results || []).slice(0, 10));
             setError(null);
         } catch (err) {
             console.error(err);
@@ -39,34 +33,59 @@ export default function Ranking() {
 
     if (loading)
         return (
-            <div style={{ color: "white", padding: "2rem" }}>
-                Carregando ranking...
+            <div style={{ color: "white", padding: "3rem", textAlign: "center" }}>
+                <div
+                    style={{
+                        width: 50,
+                        height: 50,
+                        border: "4px solid rgba(139,92,246,0.2)",
+                        borderTopColor: "#a855f7",
+                        borderRadius: "50%",
+                        margin: "0 auto 1rem",
+                        animation: "spin 1s linear infinite",
+                    }}
+                />
+                <style>{`@keyframes spin {to {transform: rotate(360deg)}}`}</style>
+                <p style={{ color: "#94a3b8" }}>Carregando ranking...</p>
             </div>
         );
 
     if (error)
         return (
-            <div style={{ color: "red", padding: "2rem" }}>{error}</div>
+            <div style={{ color: "red", padding: "2rem", textAlign: "center" }}>{error}</div>
         );
 
     return (
         <div
             style={{
                 minHeight: "100vh",
-                background: "linear-gradient(135deg,#0f172a 0%,#581c87 50%,#0f172a 100%)",
+                background:
+                    "radial-gradient(1000px 500px at 20% -10%, rgba(139,92,246,0.25), transparent), radial-gradient(900px 400px at 80% 0%, rgba(236,72,153,0.18), transparent), linear-gradient(135deg,#0f172a,#1e1b4b 50%,#0f172a)",
                 color: "white",
-                padding: "2rem",
+                padding: "2rem 1.5rem",
             }}
         >
-            <h1 style={{ textAlign: "center", marginBottom: "2rem" }}>
+            <h1
+                style={{
+                    textAlign: "center",
+                    fontSize: 42,
+                    fontWeight: 800,
+                    marginBottom: "2.5rem",
+                    background: "linear-gradient(135deg,#a855f7,#ec4899)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                }}
+            >
                 🏆 Top 10 Séries Mais Bem Avaliadas
             </h1>
 
             <div
                 style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                    gap: "24px",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                    gap: "28px",
+                    maxWidth: 1300,
+                    margin: "0 auto",
                 }}
             >
                 {series.map((serie, index) => (
@@ -77,31 +96,98 @@ export default function Ranking() {
                     >
                         <div
                             style={{
-                                background: "rgba(30,41,59,0.8)",
-                                borderRadius: 12,
-                                padding: "1rem",
-                                boxShadow: "0 8px 20px rgba(0,0,0,0.5)",
-                                transition: "transform 0.2s",
+                                position: "relative",
+                                background: "rgba(17,25,40,0.6)",
+                                border: "1px solid rgba(255,255,255,0.06)",
+                                borderRadius: 16,
+                                overflow: "hidden",
+                                boxShadow: "0 10px 40px rgba(0,0,0,0.4)",
+                                transition: "transform .3s ease, box-shadow .3s ease",
+                                backdropFilter: "blur(10px)",
                             }}
-                            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = "translateY(-8px)";
+                                e.currentTarget.style.boxShadow =
+                                    "0 20px 60px rgba(168,85,247,0.3)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = "translateY(0)";
+                                e.currentTarget.style.boxShadow =
+                                    "0 10px 40px rgba(0,0,0,0.4)";
+                            }}
                         >
+                            {/* Número de posição */}
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: 12,
+                                    left: 12,
+                                    background: "linear-gradient(135deg,#a855f7,#ec4899)",
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: "50%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontWeight: 800,
+                                    fontSize: 16,
+                                    color: "white",
+                                    boxShadow: "0 0 10px rgba(236,72,153,0.5)",
+                                }}
+                            >
+                                {index + 1}
+                            </div>
+
                             <img
-                                src={serie.poster_path ? `${IMAGE_BASE_URL}${serie.poster_path}` : ""}
+                                src={
+                                    serie.poster_path
+                                        ? `${IMAGE_BASE_URL}${serie.poster_path}`
+                                        : "https://via.placeholder.com/500x750?text=Sem+Imagem"
+                                }
                                 alt={serie.name}
                                 style={{
                                     width: "100%",
-                                    height: 300,
+                                    height: 320,
                                     objectFit: "cover",
-                                    borderRadius: 8,
+                                    borderRadius: "12px 12px 0 0",
                                 }}
                             />
-                            <h3 style={{ margin: "0.5rem 0" }}>
-                                #{index + 1} {serie.name}
-                            </h3>
-                            <p style={{ fontSize: "0.9rem", color: "#d1d5db" }}>
-                                Nota média: {serie.vote_average.toFixed(1)}
-                            </p>
+
+                            <div style={{ padding: "1rem" }}>
+                                <h3
+                                    style={{
+                                        margin: "0.3rem 0 0.4rem",
+                                        fontSize: 17,
+                                        fontWeight: 700,
+                                        color: "white",
+                                        textAlign: "center",
+                                        lineHeight: 1.3,
+                                    }}
+                                >
+                                    {serie.name}
+                                </h3>
+                                <p
+                                    style={{
+                                        fontSize: 14,
+                                        color: "#cbd5e1",
+                                        textAlign: "center",
+                                        marginBottom: 6,
+                                    }}
+                                >
+                                    ⭐ {serie.vote_average.toFixed(1)} / 10
+                                </p>
+                                <p
+                                    style={{
+                                        fontSize: 13,
+                                        color: "#94a3b8",
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    {serie.first_air_date
+                                        ? new Date(serie.first_air_date).getFullYear()
+                                        : "Ano desconhecido"}
+                                </p>
+                            </div>
                         </div>
                     </Link>
                 ))}

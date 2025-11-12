@@ -1,6 +1,13 @@
+// src/pages/Profile.js
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getFolders, createFolder, deleteFolder } from "../services/foldersService";
+import {
+    getFolders,
+    createFolder,
+    deleteFolder,
+    getFolderSeries,
+} from "../services/foldersService";
 
 const createInitialProfile = (user) => {
     const baseName = user?.email ? user.email.split("@")[0] : "Cinéfilo";
@@ -24,14 +31,21 @@ export default function Profile() {
     const [newFolderName, setNewFolderName] = useState("");
     const [newFolderDescription, setNewFolderDescription] = useState("");
 
+    // 🔹 Carrega as pastas do usuário
     useEffect(() => {
         if (!user) return;
         async function loadFolders() {
             try {
                 const data = await getFolders();
+                const foldersWithCounts = await Promise.all(
+                    data.map(async (f) => {
+                        const items = await getFolderSeries(f.id);
+                        return { ...f, itemCount: items.length };
+                    })
+                );
                 setProfile((prev) => ({
                     ...prev,
-                    folders: data,
+                    folders: foldersWithCounts,
                 }));
             } catch (err) {
                 console.error("Erro ao carregar pastas:", err);
@@ -40,23 +54,30 @@ export default function Profile() {
         loadFolders();
     }, [user]);
 
+    // 🔹 Cria uma nova pasta
     const handleCreateFolder = async (e) => {
         e.preventDefault();
         const name = newFolderName.trim();
         if (!name) return;
+
         try {
-            const newFolder = await createFolder(name, newFolderDescription);
+            const res = await createFolder(name, newFolderDescription);
+            if (!res?.id) throw new Error("Falha ao criar pasta");
+
             setProfile((prev) => ({
                 ...prev,
-                folders: [newFolder, ...prev.folders],
+                folders: [{ ...res, itemCount: 0 }, ...prev.folders],
             }));
+
             setNewFolderName("");
             setNewFolderDescription("");
         } catch (err) {
             console.error("Erro ao criar pasta:", err);
+            alert("❌ Erro ao criar pasta. Verifique se está logado.");
         }
     };
 
+    // 🔹 Remove uma pasta
     const handleDeleteFolder = async (id) => {
         try {
             await deleteFolder(id);
@@ -66,6 +87,7 @@ export default function Profile() {
             }));
         } catch (err) {
             console.error("Erro ao deletar pasta:", err);
+            alert("❌ Não foi possível deletar a pasta.");
         }
     };
 
@@ -103,12 +125,7 @@ export default function Profile() {
             }}
         >
             <div style={{ width: "100%", maxWidth: 1100 }}>
-                <section
-                    style={{
-                        textAlign: "center",
-                        marginBottom: "2.5rem",
-                    }}
-                >
+                <section style={{ textAlign: "center", marginBottom: "2.5rem" }}>
                     <div
                         style={{
                             width: 120,
@@ -214,18 +231,6 @@ export default function Profile() {
                         onCreateFolder={handleCreateFolder}
                         onDeleteFolder={handleDeleteFolder}
                     />
-                )}
-
-                {activeTab === "avaliacoes" && (
-                    <div style={{ marginTop: "1rem", color: "#9ca3af" }}>
-                        <p>Em breve você verá aqui suas avaliações de séries.</p>
-                    </div>
-                )}
-
-                {activeTab === "assistidas" && (
-                    <div style={{ marginTop: "1rem", color: "#9ca3af" }}>
-                        <p>Em breve você verá aqui as séries que marcou como assistidas.</p>
-                    </div>
                 )}
             </div>
         </div>
@@ -349,13 +354,6 @@ function PerfilTab({
                 </button>
             </form>
 
-            <div style={{ marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: "0.95rem" }}>Minhas pastas</span>
-                <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>
-          {folders.length} {folders.length === 1 ? "lista" : "listas"}
-        </span>
-            </div>
-
             <div
                 style={{
                     display: "grid",
@@ -364,9 +362,12 @@ function PerfilTab({
                 }}
             >
                 {folders.map((folder) => (
-                    <div
+                    <Link
                         key={folder.id}
+                        to={`/folders/${folder.id}`}
                         style={{
+                            textDecoration: "none",
+                            color: "inherit",
                             background: "linear-gradient(135deg, #020617, #111827)",
                             borderRadius: 18,
                             padding: "1rem 1.1rem",
@@ -374,29 +375,10 @@ function PerfilTab({
                             display: "flex",
                             flexDirection: "column",
                             justifyContent: "space-between",
+                            transition: "transform 0.2s ease",
                         }}
                     >
                         <div>
-                            <div
-                                style={{
-                                    width: "100%",
-                                    height: 110,
-                                    borderRadius: 14,
-                                    marginBottom: "0.9rem",
-                                    background:
-                                        "linear-gradient(135deg, rgba(79,70,229,0.6), rgba(236,72,153,0.5))",
-                                    display: "flex",
-                                    alignItems: "flex-end",
-                                    justifyContent: "flex-start",
-                                    padding: "0.75rem",
-                                    fontSize: "0.8rem",
-                                    letterSpacing: "0.08em",
-                                    textTransform: "uppercase",
-                                    color: "#e5e7eb",
-                                }}
-                            >
-                                Pasta
-                            </div>
                             <h3 style={{ margin: 0, marginBottom: 4, fontSize: "1rem" }}>{folder.name}</h3>
                             {folder.description && (
                                 <p
@@ -422,10 +404,13 @@ function PerfilTab({
                                 color: "#9ca3af",
                             }}
                         >
-                            <span>0 itens</span>
+                            <span>{folder.itemCount} itens</span>
                             <button
                                 type="button"
-                                onClick={() => onDeleteFolder(folder.id)}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    onDeleteFolder(folder.id);
+                                }}
                                 style={{
                                     border: "none",
                                     background: "transparent",
@@ -437,32 +422,8 @@ function PerfilTab({
                                 Remover
                             </button>
                         </div>
-                    </div>
+                    </Link>
                 ))}
-
-                <div
-                    style={{
-                        borderRadius: 18,
-                        border: "1px dashed rgba(75,85,99,0.9)",
-                        padding: "1rem 1.1rem",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        background:
-                            "radial-gradient(circle at top, rgba(79,70,229,0.18), rgba(15,23,42,1))",
-                    }}
-                    onClick={() => {
-                        const name = prompt("Nome da nova pasta:");
-                        if (name) {
-                            const fakeEvent = { preventDefault() {} };
-                            setNewFolderName(name);
-                            onCreateFolder(fakeEvent);
-                        }
-                    }}
-                >
-                    <span style={{ fontSize: "0.9rem", color: "#9ca3af" }}>+ Criar nova pasta</span>
-                </div>
             </div>
         </section>
     );

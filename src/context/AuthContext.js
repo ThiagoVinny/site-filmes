@@ -1,67 +1,38 @@
 // src/context/AuthContext.js
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 import authService from "../services/authService";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const raw = localStorage.getItem("auth");
-        if (raw) {
-            try {
-                const parsed = JSON.parse(raw);
-                setUser(parsed.user || null);
-                setToken(parsed.token || null);
-            } catch (err) {
-                console.error("Erro ao ler auth do localStorage:", err);
-                localStorage.removeItem("auth");
-            }
-        }
-        setLoading(false);
-    }, []);
+    async function register(name, email, password) {
+        await authService.register(name, email, password);
+        // opcional: já fazer login automático aqui
+    }
 
-    const persist = (userObj, tokenStr) => {
-        setUser(userObj);
-        setToken(tokenStr);
-        localStorage.setItem("auth", JSON.stringify({ user: userObj, token: tokenStr }));
-    };
+    async function login(email, password) {
+        const u = await authService.login(email, password);
+        setUser(u);
+    }
 
-    const login = async (email, password) => {
-        const res = await authService.login(email, password);
-        if (res.error) throw new Error(res.error);
-        persist(res.user, res.token);
-        return res;
-    };
-
-    const register = async (email, password) => {
-        const res = await authService.register(email, password);
-        if (res.error) throw new Error(res.error);
-        persist(res.user, res.token); // já deixa o usuário logado após registrar
-        return res;
-    };
-
-    const recover = async (email) => {
-        const res = await authService.recover(email);
-        return res;
-    };
-
-    const logout = () => {
+    async function logout() {
+        await authService.logout();
         setUser(null);
-        setToken(null);
-        localStorage.removeItem("auth");
-    };
+    }
 
-    return (
-        <AuthContext.Provider
-            value={{ user, token, loading, login, register, recover, logout }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
-};
+    async function fetchMe() {
+        try {
+            const u = await authService.me();
+            setUser(u);
+        } catch {
+            setUser(null);
+        }
+    }
+
+    const value = { user, register, login, logout, fetchMe };
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
 
 export const useAuth = () => useContext(AuthContext);

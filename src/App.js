@@ -13,21 +13,19 @@ import Register from "./pages/Register";
 import Recover from "./pages/Recover";
 import Comentarios from "./pages/Comentarios";
 import Profile from "./pages/Profile";
+import FolderView from "./pages/FolderView"; // 🆕 Import da nova tela
 
 function App() {
     return (
         <AuthProvider>
             <Router>
-                {/* Header visível em todas as páginas */}
                 <Header />
 
                 <Routes>
-                    {/* Rotas públicas */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/recover" element={<Recover />} />
 
-                    {/* Rotas protegidas */}
                     <Route
                         path="/"
                         element={
@@ -69,6 +67,15 @@ function App() {
                         element={
                             <RequireAuth>
                                 <Profile />
+                            </RequireAuth>
+                        }
+                    />
+
+                    <Route
+                        path="/folders/:id"
+                        element={
+                            <RequireAuth>
+                                <FolderView />
                             </RequireAuth>
                         }
                     />
