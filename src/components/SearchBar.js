@@ -2,9 +2,16 @@ import React, { useState } from "react";
 
 const icons = {
     search: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+        >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
     ),
 };
@@ -22,46 +29,86 @@ export default function SearchBar({ onSearch }) {
     };
 
     return (
-        <div style={{ position: "relative", maxWidth: 400, margin: "0 auto" }}>
-            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>
-                {icons.search}
-            </span>
-            <input
-                type="text"
-                value={input}
-                placeholder="Buscar séries..."
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+        <div
+            style={{
+                display: "flex",
+                justifyContent: "center",
+                margin: "1.5rem auto 3rem",
+            }}
+        >
+            <div
                 style={{
+                    display: "flex",
+                    alignItems: "center",
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 40,
+                    padding: "0.4rem 0.4rem 0.4rem 1rem",
+                    maxWidth: 480,
                     width: "100%",
-                    padding: "0.6rem 3rem 0.6rem 2.5rem",
-                    borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    backgroundColor: "rgba(255,255,255,0.1)",
-                    color: "white",
-                    fontSize: 16,
-                    outline: "none"
+                    backdropFilter: "blur(10px)",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
                 }}
-            />
-            {input && (
-                <button
-                    onClick={handleClear}
+            >
+                <span style={{ color: "#9ca3af", marginRight: 10 }}>{icons.search}</span>
+
+                <input
+                    type="text"
+                    value={input}
+                    placeholder="Buscar séries..."
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                     style={{
-                        position: "absolute",
-                        right: 12,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "rgba(107,114,128,0.5)",
+                        flex: 1,
+                        background: "transparent",
                         border: "none",
-                        borderRadius: 8,
-                        padding: "0.3rem 0.8rem",
                         color: "white",
-                        cursor: "pointer"
+                        fontSize: 15,
+                        outline: "none",
+                        padding: "0.4rem 0",
                     }}
+                />
+
+                {input && (
+                    <button
+                        onClick={handleClear}
+                        style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#9ca3af",
+                            cursor: "pointer",
+                            fontSize: 18,
+                            marginRight: 8,
+                        }}
+                    >
+                        ✕
+                    </button>
+                )}
+
+                <button
+                    onClick={handleSearch}
+                    style={{
+                        background: "linear-gradient(135deg, #a855f7, #ec4899)",
+                        border: "none",
+                        borderRadius: 30,
+                        padding: "0.5rem 1.3rem",
+                        color: "white",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontSize: 14,
+                        transition: "all 0.25s",
+                        boxShadow: "0 4px 12px rgba(236,72,153,0.35)",
+                    }}
+                    onMouseEnter={(e) =>
+                        (e.currentTarget.style.transform = "scale(1.05)")
+                    }
+                    onMouseLeave={(e) =>
+                        (e.currentTarget.style.transform = "scale(1)")
+                    }
                 >
-                    ✕
+                    Buscar
                 </button>
-            )}
+            </div>
         </div>
     );
 }
