@@ -82,10 +82,6 @@ router.post("/:id/add", auth, async (req, res) => {
         const { id } = req.params; // folder_id
         const { tmdb_id, media_type } = req.body;
 
-        console.log("=== DEBUG ADD ===");
-        console.log("req.userId:", req.userId);
-        console.log("folder id:", id);
-        console.log("body:", req.body);
 
         if (!tmdb_id) return res.status(400).json({ error: "tmdb_id é obrigatório" });
 
