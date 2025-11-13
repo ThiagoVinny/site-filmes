@@ -4,7 +4,7 @@ import SearchBar from "../components/SearchBar";
 import SeriesCard from "../components/SeriesCard";
 import AtoresDestaque from "./AtoresDestaque";
 import AddToFolderModal from "../components/AddToFolderModal";
-import { getFolders, addSerieToFolder } from "../services/foldersService"; // ✅ importa o service
+import { getFolders, addSerieToFolder } from "../services/foldersService";
 
 const API_KEY = "ee4baf041aa87a38a21cb891835ae1ca";
 const BASE_URL = "https://api.themoviedb.org/3";
