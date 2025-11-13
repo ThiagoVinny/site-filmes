@@ -1,4 +1,3 @@
-// src/pages/Profile.js
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -8,6 +7,8 @@ import {
     deleteFolder,
     getFolderSeries,
 } from "../services/foldersService";
+
+const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w300";
 
 const gradientBg =
     "radial-gradient(1200px 800px at 20% -10%, rgba(139,92,246,.25), transparent), radial-gradient(900px 500px at 80% 0%, rgba(236,72,153,.18), transparent), linear-gradient(135deg,#0f172a,#1e1b4b 50%,#0f172a)";
@@ -31,13 +32,35 @@ export default function Profile() {
 
         async function load() {
             const folders = await getFolders();
-            const foldersWithCounts = await Promise.all(
+
+            const fullFolders = await Promise.all(
                 folders.map(async (f) => {
                     const items = await getFolderSeries(f.id);
-                    return { ...f, itemCount: items.length };
+
+                    // Buscar até 4 posters reais do TMDB
+                    const posters = await Promise.all(
+                        items.slice(0, 4).map(async (item) => {
+                            try {
+                                const r = await fetch(
+                                    `https://api.themoviedb.org/3/tv/${item.tmdb_id}?api_key=ee4baf041aa87a38a21cb891835ae1ca&language=pt-BR`
+                                );
+                                const j = await r.json();
+                                return j.poster_path || null;
+                            } catch {
+                                return null;
+                            }
+                        })
+                    );
+
+                    return {
+                        ...f,
+                        itemCount: items.length,
+                        posters: posters.filter(Boolean),
+                    };
                 })
             );
-            setProfile((prev) => ({ ...prev, folders: foldersWithCounts }));
+
+            setProfile((prev) => ({ ...prev, folders: fullFolders }));
         }
 
         load();
@@ -45,7 +68,7 @@ export default function Profile() {
 
     if (!user) return <Center text="Você precisa estar logado." />;
 
-    const handleCreateFolder = async (e) => {
+    async function handleCreateFolder(e) {
         e.preventDefault();
         if (!newFolderName.trim()) return;
 
@@ -53,27 +76,27 @@ export default function Profile() {
         if (res?.id) {
             setProfile((prev) => ({
                 ...prev,
-                folders: [{ ...res, itemCount: 0 }, ...prev.folders],
+                folders: [{ ...res, itemCount: 0, posters: [] }, ...prev.folders],
             }));
             setNewFolderName("");
             setNewFolderDescription("");
         }
-    };
+    }
 
-    const handleDeleteFolder = async (id) => {
+    async function handleDeleteFolder(id) {
         await deleteFolder(id);
         setProfile((prev) => ({
             ...prev,
             folders: prev.folders.filter((f) => f.id !== id),
         }));
-    };
+    }
 
     return (
         <div style={{ minHeight: "100vh", background: gradientBg, padding: "3rem 1rem" }}>
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
                 <Header profile={profile} />
 
-                {/* Tabs */}
+                {/* abas */}
                 <div style={styles.tabRow}>
                     {["perfil", "avaliacoes", "assistidas"].map((tab) => (
                         <button
@@ -88,15 +111,14 @@ export default function Profile() {
                                 ? "Perfil"
                                 : tab === "avaliacoes"
                                     ? "Avaliações"
-                                    : "Séries assistidas"}
+                                    : "Assistidas"}
                         </button>
                     ))}
                 </div>
 
-                {/* Perfil */}
                 {activeTab === "perfil" && (
                     <section>
-                        {/* Formulário */}
+                        {/* form */}
                         <form onSubmit={handleCreateFolder} style={styles.form}>
                             <input
                                 placeholder="Nome da pasta"
@@ -113,7 +135,6 @@ export default function Profile() {
                             <button style={styles.createBtn}>Criar pasta</button>
                         </form>
 
-                        {/* Grid de pastas */}
                         <div style={styles.grid}>
                             {profile.folders.map((folder) => (
                                 <Link
@@ -121,12 +142,31 @@ export default function Profile() {
                                     to={`/folders/${folder.id}`}
                                     style={styles.folder}
                                 >
+                                    {/* GRID 2x2 de posters */}
+                                    <div style={styles.posterGrid}>
+                                        {folder.posters.length > 0 ? (
+                                            folder.posters.slice(0, 4).map((p, i) => (
+                                                <img
+                                                    key={i}
+                                                    src={`${IMAGE_BASE_URL}${p}`}
+                                                    style={styles.poster}
+                                                    alt=""
+                                                />
+                                            ))
+                                        ) : (
+                                            <div style={styles.noPosters}>Sem prévia</div>
+                                        )}
+                                    </div>
+
                                     <h3 style={styles.folderTitle}>{folder.name}</h3>
+
                                     {folder.description && (
                                         <p style={styles.folderDesc}>{folder.description}</p>
                                     )}
+
                                     <div style={styles.folderFooter}>
                                         <span>{folder.itemCount} itens</span>
+
                                         <button
                                             onClick={(e) => {
                                                 e.preventDefault();
@@ -147,7 +187,6 @@ export default function Profile() {
     );
 }
 
-/* COMPONENTES SIMPLES */
 function Center({ text }) {
     return (
         <div
@@ -156,9 +195,8 @@ function Center({ text }) {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#fff",
-                fontSize: 18,
                 background: "#0f172a",
+                color: "#fff",
             }}
         >
             {text}
@@ -193,12 +231,11 @@ function Stat({ label, value }) {
             <div style={{ fontSize: 12, color: "#94a3b8", textTransform: "uppercase" }}>
                 {label}
             </div>
-            <div style={{ fontSize: 18, marginTop: 4 }}>{value}</div>
+            <div style={{ fontSize: 18, marginTop: 4, color: "#e2e8f0" }}>{value}</div>
         </div>
     );
 }
 
-/* 🎨 ESTILOS REDUZIDOS */
 const styles = {
     avatar: {
         width: 115,
@@ -220,8 +257,17 @@ const styles = {
         justifyContent: "center",
         fontSize: 30,
     },
-    name: { fontSize: 32, fontWeight: 800, marginBottom: 6, color: "#c3c9d1" },
+
+    name: {
+        fontSize: 32,
+        fontWeight: 800,
+        marginBottom: 6,
+        background: "linear-gradient(135deg,#8b5cf6,#ec4899)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+    },
     bio: { maxWidth: 550, margin: "0 auto", color: "#94a3b8", fontSize: 15 },
+
     statsRow: {
         display: "flex",
         justifyContent: "center",
@@ -298,19 +344,48 @@ const styles = {
         boxShadow: "0 10px 25px rgba(0,0,0,.4)",
         transition: ".2s",
     },
-
     folderTitle: { margin: 0, fontSize: 18 },
     folderDesc: { margin: "6px 0 10px", color: "#9ca3af", fontSize: 14 },
+
     folderFooter: {
         display: "flex",
         justifyContent: "space-between",
         fontSize: 13,
+        marginTop: 8,
         color: "#9ca3af",
     },
+
     delete: {
         background: "transparent",
         border: "none",
         color: "#f87171",
         cursor: "pointer",
+    },
+
+    posterGrid: {
+        width: "100%",
+        height: 120,
+        display: "grid",
+        gridTemplateColumns: "repeat(2, 1fr)",
+        gridTemplateRows: "repeat(2, 1fr)",
+        gap: 4,
+        borderRadius: 12,
+        overflow: "hidden",
+        marginBottom: 12,
+        background: "rgba(255,255,255,0.04)",
+    },
+    poster: {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+    },
+    noPosters: {
+        gridColumn: "1 / span 2",
+        gridRow: "1 / span 2",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 13,
+        color: "#94a3b8",
     },
 };
