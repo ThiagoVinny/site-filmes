@@ -89,7 +89,10 @@ export default function Home() {
     const [series, setSeries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
-    const [folders, setFolders] = useState([]);
+
+    // 👇 AQUI É O PONTO CRÍTICO: usa só o setter
+    const [, setFolders] = useState([]);
+
     const [selectedSerie, setSelectedSerie] = useState(null);
 
     // 🔹 Busca de séries populares
