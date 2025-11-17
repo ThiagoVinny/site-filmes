@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
 const foldersRoutes = require("./routes/folders");
+const commentsRoutes = require("./routes/comments");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+
 // 👋 Rota de teste
 app.get("/", (req, res) => {
     res.json({ ok: true, message: "🎬 API Cinefy rodando com sucesso!" });
@@ -29,6 +31,7 @@ app.get("/", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes);
 app.use("/folders", foldersRoutes);
+app.use("/comments", commentsRoutes);
 
 // 🧯 Handler de erro global
 app.use((err, req, res, next) => {

@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import RequireAuth from "./components/RequireAuth";
+import GuestRoute from "./components/GuestRoute";
 
 import Header from "./components/Header";
 
@@ -22,9 +23,32 @@ function App() {
                 <Header />
 
                 <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/recover" element={<Recover />} />
+                    <Route
+                        path="/login"
+                        element={
+                            <GuestRoute>
+                                <Login />
+                            </GuestRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/register"
+                        element={
+                            <GuestRoute>
+                                <Register />
+                            </GuestRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/recover"
+                        element={
+                            <GuestRoute>
+                                <Recover />
+                            </GuestRoute>
+                        }
+                    />
 
                     <Route
                         path="/"
