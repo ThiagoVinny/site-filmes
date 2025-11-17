@@ -1,5 +1,8 @@
+// src/pages/SeriesDetails.js
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import commentService from "../services/commentService";
 
 const API_KEY = "ee4baf041aa87a38a21cb891835ae1ca";
 const BASE_URL = "https://api.themoviedb.org/3";
@@ -22,33 +25,33 @@ const icons = {
     ),
     tv: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
-            <polyline points="17 2 12 7 7 2"/>
+            <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+            <polyline points="17 2 12 7 7 2" />
         </svg>
     ),
     globe: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="2" y1="12" x2="22" y2="12"/>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
         </svg>
     ),
     film: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
-            <line x1="7" y1="2" x2="7" y2="22"/>
-            <line x1="17" y1="2" x2="17" y2="22"/>
-            <line x1="2" y1="12" x2="22" y2="12"/>
-            <line x1="2" y1="7" x2="7" y2="7"/>
-            <line x1="2" y1="17" x2="7" y2="17"/>
-            <line x1="17" y1="17" x2="22" y2="17"/>
-            <line x1="17" y1="7" x2="22" y2="7"/>
+            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+            <line x1="7" y1="2" x2="7" y2="22" />
+            <line x1="17" y1="2" x2="17" y2="22" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <line x1="2" y1="7" x2="7" y2="7" />
+            <line x1="2" y1="17" x2="7" y2="17" />
+            <line x1="17" y1="17" x2="22" y2="17" />
+            <line x1="17" y1="7" x2="22" y2="7" />
         </svg>
     ),
     arrow: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="19" y1="12" x2="5" y2="12"/>
-            <polyline points="12 19 5 12 12 5"/>
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
         </svg>
     ),
 };
@@ -56,11 +59,27 @@ const icons = {
 const SeriesDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
+
+    // Estados da série
     const [serie, setSerie] = useState(null);
     const [cast, setCast] = useState([]);
     const [video, setVideo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Estados dos comentários
+    const [comments, setComments] = useState([]);
+    const [loadingComments, setLoadingComments] = useState(true);
+    const [commentText, setCommentText] = useState("");
+
+    // Edição de comentário
+    const [editingId, setEditingId] = useState(null);
+    const [editingText, setEditingText] = useState("");
+
+    // 🆕 estados para avaliação
+    const [rating, setRating] = useState(0);          // 1 a 5
+    const [watchedAt, setWatchedAt] = useState("");  // yyyy-mm-dd (input date)
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -95,8 +114,70 @@ const SeriesDetails = () => {
             }
         };
 
+        const fetchComments = async () => {
+            try {
+                const result = await commentService.getBySeries(id);
+                setComments(result);
+            } catch (err) {
+                console.error("Erro ao carregar comentários:", err);
+            } finally {
+                setLoadingComments(false);
+            }
+        };
+
         fetchDetails();
+        fetchComments();
     }, [id]);
+
+    async function handleSubmitComment(e) {
+        e.preventDefault();
+        if (!commentText.trim()) return;
+
+        try {
+            await commentService.create(
+                id,
+                commentText,
+                rating || null,
+                watchedAt || null
+            );
+
+            // limpa campos
+            setCommentText("");
+            setRating(0);
+            setWatchedAt("");
+
+            // recarrega lista
+            const updated = await commentService.getBySeries(id);
+            setComments(updated);
+        } catch (err) {
+            console.error("Erro ao enviar comentário:", err);
+        }
+    }
+
+
+    async function handleSaveEdit(commentId) {
+        if (!editingText.trim()) return;
+
+        try {
+            await commentService.update(commentId, editingText);
+            const updated = await commentService.getBySeries(id);
+            setComments(updated);
+            setEditingId(null);
+            setEditingText("");
+        } catch (err) {
+            console.error("Erro ao editar comentário:", err);
+        }
+    }
+
+    async function handleDelete(commentId) {
+        try {
+            await commentService.remove(commentId);
+            const updated = await commentService.getBySeries(id);
+            setComments(updated);
+        } catch (err) {
+            console.error("Erro ao excluir comentário:", err);
+        }
+    }
 
     if (loading) {
         return (
@@ -149,7 +230,7 @@ const SeriesDetails = () => {
             background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
             color: "white",
         }}>
-            {/* Header com backdrop */}
+            {/* HEADER COM BACKDROP */}
             <div style={{ position: "relative", marginBottom: "2rem" }}>
                 {serie.backdrop_path && (
                     <>
@@ -196,21 +277,13 @@ const SeriesDetails = () => {
                             transition: "all 0.3s",
                             marginBottom: "2rem"
                         }}
-                        onMouseEnter={e => {
-                            e.target.style.backgroundColor = "rgba(30,41,59,0.9)";
-                            e.target.style.transform = "translateX(-4px)";
-                        }}
-                        onMouseLeave={e => {
-                            e.target.style.backgroundColor = "rgba(30,41,59,0.7)";
-                            e.target.style.transform = "translateX(0)";
-                        }}
                     >
                         {icons.arrow} Voltar
                     </button>
                 </div>
             </div>
 
-            {/* Conteúdo principal */}
+            {/* CONTEÚDO PRINCIPAL */}
             <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 2rem 3rem" }}>
                 <div style={{
                     display: "grid",
@@ -236,7 +309,7 @@ const SeriesDetails = () => {
                         </div>
                     )}
 
-                    {/* Informações */}
+                    {/* Informações da série */}
                     <div>
                         <h1 style={{
                             fontSize: 48,
@@ -258,7 +331,7 @@ const SeriesDetails = () => {
                             </p>
                         )}
 
-                        {/* Rating e info básica */}
+                        {/* Rating + Info básica */}
                         <div style={{
                             display: "flex",
                             gap: "1.5rem",
@@ -287,15 +360,22 @@ const SeriesDetails = () => {
 
                             {serie.number_of_seasons && (
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8" }}>
-                                    {icons.tv} {serie.number_of_seasons} Temporada{serie.number_of_seasons > 1 ? 's' : ''}
+                                    {icons.tv} {serie.number_of_seasons} Temporada
+                                    {serie.number_of_seasons > 1 ? "s" : ""}
                                 </div>
                             )}
 
                             {serie.status && (
                                 <div style={{
                                     padding: "0.4rem 0.8rem",
-                                    background: serie.status === "Returning Series" ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)",
-                                    color: serie.status === "Returning Series" ? "#22c55e" : "#ef4444",
+                                    background:
+                                        serie.status === "Returning Series"
+                                            ? "rgba(34,197,94,0.2)"
+                                            : "rgba(239,68,68,0.2)",
+                                    color:
+                                        serie.status === "Returning Series"
+                                            ? "#22c55e"
+                                            : "#ef4444",
                                     borderRadius: 8,
                                     fontSize: 14,
                                     fontWeight: "600"
@@ -327,7 +407,9 @@ const SeriesDetails = () => {
 
                         {/* Sinopse */}
                         <div style={{ marginBottom: "2rem" }}>
-                            <h2 style={{ fontSize: 24, fontWeight: "700", marginBottom: "1rem" }}>Sinopse</h2>
+                            <h2 style={{ fontSize: 24, fontWeight: "700", marginBottom: "1rem" }}>
+                                Sinopse
+                            </h2>
                             <p style={{
                                 fontSize: 16,
                                 lineHeight: 1.8,
@@ -337,7 +419,7 @@ const SeriesDetails = () => {
                             </p>
                         </div>
 
-                        {/* Detalhes adicionais */}
+                        {/* Detalhes */}
                         <div style={{
                             background: "rgba(30,41,59,0.4)",
                             backdropFilter: "blur(10px)",
@@ -346,7 +428,9 @@ const SeriesDetails = () => {
                             border: "1px solid rgba(255,255,255,0.05)",
                             marginBottom: "2rem"
                         }}>
-                            <h3 style={{ fontSize: 20, fontWeight: "700", marginBottom: "1rem" }}>Detalhes</h3>
+                            <h3 style={{ fontSize: 20, fontWeight: "700", marginBottom: "1rem" }}>
+                                Detalhes
+                            </h3>
 
                             <div style={{ display: "grid", gap: "0.75rem" }}>
                                 {serie.number_of_episodes && (
@@ -358,24 +442,36 @@ const SeriesDetails = () => {
 
                                 {serie.original_language && (
                                     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                                        <span style={{ color: "#94a3b8", minWidth: 120, display: "flex", alignItems: "center", gap: 8 }}>
+                                        <span style={{
+                                            color: "#94a3b8",
+                                            minWidth: 120,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 8
+                                        }}>
                                             {icons.globe} Idioma:
                                         </span>
-                                        <span style={{ fontWeight: "600" }}>{serie.original_language.toUpperCase()}</span>
+                                        <span style={{ fontWeight: "600" }}>
+                                            {serie.original_language.toUpperCase()}
+                                        </span>
                                     </div>
                                 )}
 
                                 {serie.networks && serie.networks.length > 0 && (
                                     <div style={{ display: "flex", gap: 12 }}>
                                         <span style={{ color: "#94a3b8", minWidth: 120 }}>Rede:</span>
-                                        <span style={{ fontWeight: "600" }}>{serie.networks.map(n => n.name).join(", ")}</span>
+                                        <span style={{ fontWeight: "600" }}>
+                                            {serie.networks.map((n) => n.name).join(", ")}
+                                        </span>
                                     </div>
                                 )}
 
                                 {serie.production_companies && serie.production_companies.length > 0 && (
                                     <div style={{ display: "flex", gap: 12 }}>
                                         <span style={{ color: "#94a3b8", minWidth: 120 }}>Produtoras:</span>
-                                        <span style={{ fontWeight: "600" }}>{serie.production_companies.slice(0, 3).map(p => p.name).join(", ")}</span>
+                                        <span style={{ fontWeight: "600" }}>
+                                            {serie.production_companies.slice(0, 3).map((p) => p.name).join(", ")}
+                                        </span>
                                     </div>
                                 )}
                             </div>
@@ -384,7 +480,14 @@ const SeriesDetails = () => {
                         {/* Elenco */}
                         {cast.length > 0 && (
                             <div style={{ marginBottom: "2rem" }}>
-                                <h3 style={{ fontSize: 24, fontWeight: "700", marginBottom: "1rem" }}>Elenco Principal</h3>
+                                <h3 style={{
+                                    fontSize: 24,
+                                    fontWeight: "700",
+                                    marginBottom: "1rem"
+                                }}>
+                                    Elenco Principal
+                                </h3>
+
                                 <div style={{
                                     display: "grid",
                                     gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
@@ -404,7 +507,11 @@ const SeriesDetails = () => {
                                                     <img
                                                         src={`https://image.tmdb.org/t/p/w200${actor.profile_path}`}
                                                         alt={actor.name}
-                                                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                                        style={{
+                                                            width: "100%",
+                                                            height: "100%",
+                                                            objectFit: "cover"
+                                                        }}
                                                     />
                                                 ) : (
                                                     <div style={{
@@ -420,8 +527,16 @@ const SeriesDetails = () => {
                                                     </div>
                                                 )}
                                             </div>
-                                            <p style={{ fontSize: 13, fontWeight: "600", marginBottom: 2 }}>{actor.name}</p>
-                                            <p style={{ fontSize: 11, color: "#94a3b8" }}>{actor.character}</p>
+                                            <p style={{
+                                                fontSize: 13,
+                                                fontWeight: "600",
+                                                marginBottom: 2
+                                            }}>
+                                                {actor.name}
+                                            </p>
+                                            <p style={{ fontSize: 11, color: "#94a3b8" }}>
+                                                {actor.character}
+                                            </p>
                                         </div>
                                     ))}
                                 </div>
@@ -431,9 +546,17 @@ const SeriesDetails = () => {
                         {/* Trailer */}
                         {video && (
                             <div>
-                                <h3 style={{ fontSize: 24, fontWeight: "700", marginBottom: "1rem", display: "flex", alignItems: "center", gap: 12 }}>
+                                <h3 style={{
+                                    fontSize: 24,
+                                    fontWeight: "700",
+                                    marginBottom: "1rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 12
+                                }}>
                                     {icons.film} Trailer
                                 </h3>
+
                                 <div style={{
                                     borderRadius: 16,
                                     overflow: "hidden",
@@ -452,6 +575,229 @@ const SeriesDetails = () => {
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* COMENTÁRIOS */}
+                <div style={{ marginTop: "3rem" }}>
+                    <h2 style={{ fontSize: 24, fontWeight: "700", marginBottom: "1rem" }}>
+                        Comentários da comunidade
+                    </h2>
+
+                    {user ? (
+                        <form onSubmit={handleSubmitComment} style={{ marginBottom: "2rem" }}>
+                            {/* textarea do comentário */}
+                            <textarea
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                placeholder="Escreva sua avaliação sobre a série..."
+                                style={{
+                                    width: "100%",
+                                    height: "120px",
+                                    padding: "1rem",
+                                    borderRadius: 12,
+                                    border: "1px solid rgba(255,255,255,0.1)",
+                                    background: "rgba(30,41,59,0.3)",
+                                    color: "#fff",
+                                    fontSize: 16,
+                                    marginBottom: "0.75rem",
+                                }}
+                            />
+
+                            {/* linha com rating + data assistida */}
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: "1rem",
+                                    alignItems: "center",
+                                    marginBottom: "0.75rem",
+                                }}
+                            >
+                                {/* seletor de nota */}
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <span style={{ color: "#cbd5e1", fontSize: 14 }}>Sua nota:</span>
+                                    <div style={{ display: "flex", gap: 6 }}>
+                                        {[1, 2, 3, 4, 5].map((n) => (
+                                            <button
+                                                key={n}
+                                                type="button"
+                                                onClick={() => setRating(n)}
+                                                style={{
+                                                    width: 28,
+                                                    height: 28,
+                                                    borderRadius: "999px",
+                                                    border:
+                                                        rating === n
+                                                            ? "2px solid #facc15"
+                                                            : "1px solid rgba(148,163,184,0.6)",
+                                                    background:
+                                                        rating === n
+                                                            ? "rgba(250,204,21,0.15)"
+                                                            : "transparent",
+                                                    color: rating === n ? "#fde68a" : "#e5e7eb",
+                                                    fontSize: 13,
+                                                    cursor: "pointer",
+                                                }}
+                                            >
+                                                {n}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* data que assistiu */}
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <span style={{ color: "#cbd5e1", fontSize: 14 }}>Visto em:</span>
+                                    <input
+                                        type="date"
+                                        value={watchedAt}
+                                        onChange={(e) => setWatchedAt(e.target.value)}
+                                        style={{
+                                            height: 32,
+                                            borderRadius: 8,
+                                            border: "1px solid rgba(148,163,184,0.6)",
+                                            background: "rgba(15,23,42,0.9)",
+                                            color: "#e5e7eb",
+                                            padding: "0 0.5rem",
+                                            fontSize: 13,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                style={{
+                                    padding: "0.75rem 1.5rem",
+                                    background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+                                    border: "none",
+                                    borderRadius: 12,
+                                    color: "#fff",
+                                    cursor: "pointer",
+                                    fontWeight: "600",
+                                }}
+                            >
+                                Enviar avaliação
+                            </button>
+                        </form>
+                    ) : (
+                        <p style={{ color: "#94a3b8", marginBottom: "2rem" }}>
+                            Faça login para deixar sua avaliação.
+                        </p>
+                    )}
+
+
+                    {loadingComments ? (
+                        <p style={{ color: "#94a3b8" }}>Carregando comentários...</p>
+                    ) : comments.length === 0 ? (
+                        <p style={{ color: "#94a3b8" }}>
+                            Nenhum comentário ainda. Seja o primeiro!
+                        </p>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                            {comments.map((c) => (
+                                <div
+                                    key={c.id}
+                                    style={{
+                                        background: "rgba(30,41,59,0.6)",
+                                        padding: "1rem",
+                                        borderRadius: 12,
+                                        border: "1px solid rgba(255,255,255,0.1)",
+                                    }}
+                                >
+                                    <p style={{ color: "#cbd5e1", marginBottom: "0.5rem" }}>
+                                        <strong>{c.user_name || "Usuário"}</strong>
+                                    </p>
+
+                                    {editingId === c.id ? (
+                                        <>
+                                            <textarea
+                                                value={editingText}
+                                                onChange={(e) => setEditingText(e.target.value)}
+                                                style={{
+                                                    width: "100%",
+                                                    padding: 10,
+                                                    borderRadius: 8,
+                                                    background: "#0f172a",
+                                                    color: "#fff",
+                                                    border: "1px solid #333",
+                                                    marginBottom: 10
+                                                }}
+                                            />
+
+                                            <button
+                                                onClick={() => handleSaveEdit(c.id)}
+                                                style={{
+                                                    background: "#22c55e",
+                                                    padding: "6px 14px",
+                                                    borderRadius: 8,
+                                                    color: "#fff",
+                                                    border: "none",
+                                                    marginRight: 10,
+                                                    cursor: "pointer"
+                                                }}
+                                            >
+                                                Salvar
+                                            </button>
+
+                                            <button
+                                                onClick={() => setEditingId(null)}
+                                                style={{
+                                                    background: "#ef4444",
+                                                    padding: "6px 14px",
+                                                    borderRadius: 8,
+                                                    color: "#fff",
+                                                    border: "none",
+                                                    cursor: "pointer"
+                                                }}
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p style={{ color: "#e2e8f0" }}>{c.content}</p>
+
+                                            {user?.id === c.user_id && (
+                                                <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingId(c.id);
+                                                            setEditingText(c.content);
+                                                        }}
+                                                        style={{
+                                                            background: "rgba(139,92,246,0.3)",
+                                                            border: "1px solid rgba(139,92,246,0.4)",
+                                                            padding: "6px 14px",
+                                                            borderRadius: 8,
+                                                            color: "#c4b5fd",
+                                                            cursor: "pointer",
+                                                        }}
+                                                    >
+                                                        Editar
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => handleDelete(c.id)}
+                                                        style={{
+                                                            background: "rgba(239,68,68,0.2)",
+                                                            border: "1px solid rgba(239,68,68,0.4)",
+                                                            padding: "6px 14px",
+                                                            borderRadius: 8,
+                                                            color: "#f87171",
+                                                            cursor: "pointer",
+                                                        }}
+                                                    >
+                                                        Excluir
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
