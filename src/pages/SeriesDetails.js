@@ -1,5 +1,5 @@
 // src/pages/SeriesDetails.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import commentService from "../services/commentService";
@@ -81,6 +81,91 @@ const SeriesDetails = () => {
     const [rating, setRating] = useState(0);          // 1 a 5
     const [watchedAt, setWatchedAt] = useState("");  // yyyy-mm-dd (input date)
 
+    // 🆕 Estado para o botão de "Assistido"
+    const [isWatched, setIsWatched] = useState(false);
+    const [loadingWatched, setLoadingWatched] = useState(false);
+
+    // 🆕 Controle visual dos spoilers
+    const [revealedSpoilers, setRevealedSpoilers] = useState({});
+
+    const toggleSpoiler = (id) => {
+        setRevealedSpoilers(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+    
+    // 🆕 Estado para controlar o "Ver mais" de textos longos
+    const [expandedComments, setExpandedComments] = useState({});
+
+    // 🆕 USEEFFECT: Verifica se o usuário já assistiu
+    useEffect(() => {
+        const checkWatchedStatus = async () => {
+            // Se não tiver usuário logado ou não tiver ID da série, não faz nada
+            if (!user || !id) return;
+
+            try {
+                const response = await fetch(`http://localhost:4000/watched/check/${id}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "include"
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setIsWatched(data); // true ou false
+                }
+            } catch (err) {
+                console.error("Erro ao verificar status de assistido:", err);
+            }
+        };
+
+        checkWatchedStatus();
+    }, [id, user]);
+
+    // 🆕 FUNÇÃO DO CLIQUE NO BOTÃO
+    const handleWatchToggle = async () => {
+        if (!user) {
+            alert("Você precisa estar logado para salvar séries!");
+            return;
+        }
+
+        setLoadingWatched(true);
+
+        try {
+            const headers = {
+                "Content-Type": "application/json"
+            };
+
+            if (isWatched) {
+                // --> REMOVER
+                await fetch(`http://localhost:4000/watched/remove/${id}`, {
+                    method: "DELETE",
+                    headers: headers,
+                    credentials: "include"
+                });
+                setIsWatched(false);
+            } else {
+                // --> ADICIONAR
+                await fetch("http://localhost:4000/watched/add", {
+                    method: "POST",
+                    headers: headers,
+                    credentials: "include",
+                    body: JSON.stringify({
+                        series_id: id,
+                        title: serie.name,
+                        poster_path: serie.poster_path
+                    })
+                });
+                setIsWatched(true);
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar lista:", error);
+            alert("Erro ao salvar. Verifique se você está logado.");
+        } finally {
+            setLoadingWatched(false);
+        }
+    };
+
     useEffect(() => {
         const fetchDetails = async () => {
             try {
@@ -138,7 +223,8 @@ const SeriesDetails = () => {
                 id,
                 commentText,
                 rating || null,
-                watchedAt || null
+                watchedAt || null,
+                serie.name
             );
 
             // limpa campos
@@ -404,6 +490,51 @@ const SeriesDetails = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* Botão de Adicionar serie */}
+                        <div style={{ marginBottom: "2rem" }}>
+                            <button
+                                onClick={handleWatchToggle}
+                                disabled={loadingWatched}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "10px",
+                                    padding: "12px 24px",
+                                    borderRadius: "12px",
+                                    border: "none",
+                                    fontSize: "1rem",
+                                    fontWeight: "600",
+                                    cursor: loadingWatched ? "wait" : "pointer",
+                                    transition: "all 0.2s ease",
+                                    // Lógica de Cores:
+                                    backgroundColor: isWatched ? "#22c55e" : "#8b5cf6",
+                                    color: "white",
+                                    boxShadow: isWatched
+                                        ? "0 0 15px rgba(34, 197, 94, 0.4)"
+                                        : "0 4px 15px rgba(139, 92, 246, 0.4)",
+                                    opacity: loadingWatched ? 0.7 : 1
+                                }}
+                            >
+                                {loadingWatched ? (
+                                    <span>⏳ Salvando...</span>
+                                ) : isWatched ? (
+                                    <>
+                                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Assistida
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Marcar como Assistida
+                                    </>
+                                )}
+                            </button>
+                        </div>
 
                         {/* Sinopse */}
                         <div style={{ marginBottom: "2rem" }}>
@@ -695,107 +826,116 @@ const SeriesDetails = () => {
                         </p>
                     ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                            {comments.map((c) => (
-                                <div
-                                    key={c.id}
-                                    style={{
+                            {comments.map((c) => {
+                                // Variáveis de apoio
+                                const isSpoiler = c.is_spoiler;
+                                const isRevealed = revealedSpoilers[c.id];
+                                const isEditing = editingId === c.id;
+
+                                // Lógica do texto longo
+                                const fullText = c.content || "";
+                                const isLong = fullText.length > 220;
+                                const isExpanded = expandedComments[c.id];
+                                const textToShow = isExpanded || !isLong ? fullText : fullText.slice(0, 220) + "…";
+
+                                return (
+                                    <div key={c.id} style={{
                                         background: "rgba(30,41,59,0.6)",
                                         padding: "1rem",
                                         borderRadius: 12,
                                         border: "1px solid rgba(255,255,255,0.1)",
-                                    }}
-                                >
-                                    <p style={{ color: "#cbd5e1", marginBottom: "0.5rem" }}>
-                                        <strong>{c.user_name || "Usuário"}</strong>
-                                    </p>
+                                    }}>
+                                        {/* Cabeçalho do Comentário */}
+                                        <p style={{ color: "#cbd5e1", marginBottom: "0.5rem" }}>
+                                            <strong>{c.user_name || "Usuário"}</strong>
+                                        </p>
 
-                                    {editingId === c.id ? (
-                                        <>
-                                            <textarea
-                                                value={editingText}
-                                                onChange={(e) => setEditingText(e.target.value)}
-                                                style={{
-                                                    width: "100%",
-                                                    padding: 10,
-                                                    borderRadius: 8,
-                                                    background: "#0f172a",
-                                                    color: "#fff",
-                                                    border: "1px solid #333",
-                                                    marginBottom: 10
-                                                }}
-                                            />
-
-                                            <button
-                                                onClick={() => handleSaveEdit(c.id)}
-                                                style={{
-                                                    background: "#22c55e",
-                                                    padding: "6px 14px",
-                                                    borderRadius: 8,
-                                                    color: "#fff",
-                                                    border: "none",
-                                                    marginRight: 10,
-                                                    cursor: "pointer"
-                                                }}
-                                            >
-                                                Salvar
-                                            </button>
-
-                                            <button
-                                                onClick={() => setEditingId(null)}
-                                                style={{
-                                                    background: "#ef4444",
-                                                    padding: "6px 14px",
-                                                    borderRadius: 8,
-                                                    color: "#fff",
-                                                    border: "none",
-                                                    cursor: "pointer"
-                                                }}
-                                            >
-                                                Cancelar
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <p style={{ color: "#e2e8f0" }}>{c.content}</p>
-
-                                            {user?.id === c.user_id && (
-                                                <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingId(c.id);
-                                                            setEditingText(c.content);
-                                                        }}
-                                                        style={{
-                                                            background: "rgba(139,92,246,0.3)",
-                                                            border: "1px solid rgba(139,92,246,0.4)",
-                                                            padding: "6px 14px",
-                                                            borderRadius: 8,
-                                                            color: "#c4b5fd",
-                                                            cursor: "pointer",
-                                                        }}
-                                                    >
-                                                        Editar
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => handleDelete(c.id)}
-                                                        style={{
-                                                            background: "rgba(239,68,68,0.2)",
-                                                            border: "1px solid rgba(239,68,68,0.4)",
-                                                            padding: "6px 14px",
-                                                            borderRadius: 8,
-                                                            color: "#f87171",
-                                                            cursor: "pointer",
-                                                        }}
-                                                    >
-                                                        Excluir
-                                                    </button>
+                                        {/* ⚠️ ÁREA DE PROTEÇÃO DE SPOILER */}
+                                        {isSpoiler && !isRevealed ? (
+                                            <div style={{
+                                                background: "rgba(15, 23, 42, 0.8)",
+                                                border: "1px dashed #ef4444",
+                                                borderRadius: 8,
+                                                padding: "1.5rem",
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                alignItems: "center",
+                                                gap: 10,
+                                                textAlign: "center"
+                                            }}>
+                                                <span style={{ fontSize: 24 }}>🙈</span>
+                                                <div style={{ color: "#ef4444", fontWeight: "bold" }}>
+                                                    Alerta de Spoiler detectado
                                                 </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            ))}
+                                                <button
+                                                    onClick={() => toggleSpoiler(c.id)}
+                                                    style={{
+                                                        background: "transparent",
+                                                        border: "1px solid #94a3b8",
+                                                        color: "#cbd5e1",
+                                                        padding: "6px 16px",
+                                                        borderRadius: 6,
+                                                        cursor: "pointer",
+                                                        fontSize: 13,
+                                                        marginTop: 5
+                                                    }}
+                                                >
+                                                    Ver comentário mesmo assim
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            /* ✅ CONTEÚDO NORMAL (Texto ou Edição) */
+                                            <>
+                                                {isEditing ? (
+                                                    <>
+                                                        <textarea
+                                                            value={editingText}
+                                                            onChange={(e) => setEditingText(e.target.value)}
+                                                            style={{ width: "100%", padding: 10, borderRadius: 8, background: "#0f172a", color: "#fff", border: "1px solid #333", marginBottom: 10, minHeight: 80 }}
+                                                        />
+                                                        <div style={{ display: "flex", gap: 10 }}>
+                                                            <button onClick={() => handleSaveEdit(c.id)} style={{ background: "#22c55e", padding: "6px 14px", borderRadius: 8, color: "#fff", border: "none", cursor: "pointer" }}>Salvar</button>
+                                                            <button onClick={() => { setEditingId(null); setEditingText(""); }} style={{ background: "#ef4444", padding: "6px 14px", borderRadius: 8, color: "#fff", border: "none", cursor: "pointer" }}>Cancelar</button>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <p style={{ color: "#e2e8f0", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{textToShow}</p>
+
+                                                        {isLong && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setExpandedComments(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
+                                                                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#60a5fa", fontSize: 13, marginTop: 4 }}
+                                                            >
+                                                                {isExpanded ? "Ver menos" : "Ver mais"}
+                                                            </button>
+                                                        )}
+
+                                                        {/* Botões de Ação (Só para o dono) */}
+                                                        {user?.id === c.user_id && (
+                                                            <div style={{ marginTop: 14, display: "flex", gap: 12, fontSize: 13 }}>
+                                                                <button
+                                                                    onClick={() => { setEditingId(c.id); setEditingText(c.content); }}
+                                                                    style={{ background: "none", border: "none", color: "#c4b5fd", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                                                                >
+                                                                    Editar
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDelete(c.id)}
+                                                                    style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                                                                >
+                                                                    Excluir
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

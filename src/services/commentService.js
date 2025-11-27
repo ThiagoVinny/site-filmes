@@ -7,9 +7,10 @@ const commentService = {
      * @param {number} seriesId
      * @param {string} content
      * @param {number|null} rating
-     * @param {string|null} watchedAt - formato 'YYYY-MM-DD'
+     * @param {string|null} watchedAt
+     * @param {string} seriesName - 🆕 Adicionado para a IA saber o contexto
      */
-    async create(seriesId, content, rating = null, watchedAt = null) {
+    async create(seriesId, content, rating = null, watchedAt = null, seriesName) {
         return apiFetch("/comments", {
             method: "POST",
             body: JSON.stringify({
@@ -17,6 +18,7 @@ const commentService = {
                 content,
                 rating,
                 watched_at: watchedAt,
+                series_name: seriesName, // 👈 AQUI ESTAVA FALTANDO!
             }),
         });
     },
