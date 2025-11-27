@@ -1,3 +1,4 @@
+// src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
@@ -14,7 +15,7 @@ import Register from "./pages/Register";
 import Recover from "./pages/Recover";
 import Comentarios from "./pages/Comentarios";
 import Profile from "./pages/Profile";
-import FolderView from "./pages/FolderView"; // 🆕 Import da nova tela
+import FolderView from "./pages/FolderView"; // Tela de pastas
 
 function App() {
     return (
@@ -23,6 +24,7 @@ function App() {
                 <Header />
 
                 <Routes>
+                    {/* Rotas de convidado (se tiver logado, manda pra "/") */}
                     <Route
                         path="/login"
                         element={
@@ -50,42 +52,28 @@ function App() {
                         }
                     />
 
+                    {/* 🔓 Rotas públicas – qualquer um pode acessar */}
                     <Route
                         path="/"
-                        element={
-                            <RequireAuth>
-                                <Home />
-                            </RequireAuth>
-                        }
+                        element={<Home />}
                     />
 
                     <Route
                         path="/series/:id"
-                        element={
-                            <RequireAuth>
-                                <SeriesDetails />
-                            </RequireAuth>
-                        }
+                        element={<SeriesDetails />}
                     />
 
                     <Route
                         path="/ranking"
-                        element={
-                            <RequireAuth>
-                                <Ranking />
-                            </RequireAuth>
-                        }
+                        element={<Ranking />}
                     />
 
                     <Route
                         path="/series/:id/comentarios"
-                        element={
-                            <RequireAuth>
-                                <Comentarios />
-                            </RequireAuth>
-                        }
+                        element={<Comentarios />}
                     />
 
+                    {/* 🔐 Rotas que continuam protegidas */}
                     <Route
                         path="/profile"
                         element={
