@@ -7,6 +7,7 @@ const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
 const foldersRoutes = require("./routes/folders");
 const commentsRoutes = require("./routes/comments");
+const watchedRoutes = require("./routes/watched"); 
 
 const app = express();
 
@@ -32,12 +33,16 @@ app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes);
 app.use("/folders", foldersRoutes);
 app.use("/comments", commentsRoutes);
+app.use("/watched", watchedRoutes);
+
 
 // 🧯 Handler de erro global
 app.use((err, req, res, next) => {
     console.error("❌ Erro interno:", err);
     res.status(500).json({ error: "Erro interno no servidor" });
 });
+
+
 
 // 🚀 Inicialização
 const PORT = process.env.PORT || 4000;

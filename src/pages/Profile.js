@@ -47,6 +47,43 @@ export default function Profile() {
     const [editingId, setEditingId] = useState(null);
     const [editingText, setEditingText] = useState("");
 
+    // 🆕 Estado para a lista de assistidos
+    const [watchedList, setWatchedList] = useState([]);
+
+    // 1. Formatar data (Dia/Mês/Ano)
+    const formatDateSimple = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+        });
+    };
+
+    // 2. Remover da lista
+    const handleRemoveFromList = async (e, id) => {
+        e.preventDefault(); 
+        e.stopPropagation(); 
+
+        if (!window.confirm("Tem a certeza que quer remover esta série da lista?")) return;
+
+        try {
+            const res = await fetch(`http://localhost:4000/watched/remove/${id}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include" 
+            });
+
+            if (res.ok) {
+                setWatchedList((prev) => prev.filter((item) => item.series_id !== id));
+            }
+        } catch (err) {
+            console.error("Erro ao remover:", err);
+            alert("Erro ao remover série.");
+        }
+    };
+
     useEffect(() => {
         if (!user) return;
 
@@ -68,6 +105,25 @@ export default function Profile() {
 
                 const comments = await commentService.getByUser(user.id);
                 setUserComments(comments);
+
+                // 🆕 Carregar séries assistidas
+                try {
+                const resWatched = await fetch("http://localhost:4000/watched/my-list", {
+                    method: "GET",
+                    headers: { 
+                        "Content-Type": "application/json" 
+                    },
+                    credentials: "include" // 👈 A CHAVE MÁGICA! Sem isso, o perfil não carrega.
+                });
+                
+                if (resWatched.ok) {
+                    const dataWatched = await resWatched.json();
+                    setWatchedList(dataWatched);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar assistidos:", err);
+            }
+
             } catch (err) {
                 console.error("Erro ao carregar dados do perfil:", err);
             } finally {
@@ -451,7 +507,7 @@ export default function Profile() {
                                                                                     ? {
                                                                                         ...item,
                                                                                         content:
-                                                                                        editingText,
+                                                                                            editingText,
                                                                                     }
                                                                                     : item
                                                                             )
@@ -647,12 +703,127 @@ export default function Profile() {
                     </section>
                 )}
 
-                {/* ASSISTIDAS — placeholder por enquanto */}
+                {/* ASSISTIDAS */}
                 {activeTab === "assistidas" && (
                     <section style={{ padding: 20 }}>
-                        <p style={{ color: "#94a3b8" }}>
-                            Em breve: suas séries marcadas como assistidas.
-                        </p>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                            <h2 style={{ fontSize: 24, fontWeight: 700, color: "#c3c9d1", margin: 0 }}>
+                                Séries que já vi
+                            </h2>
+                            <span style={{ background: "#22c55e", color: "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 12, fontWeight: "bold" }}>
+                                {watchedList.length}
+                            </span>
+                        </div>
+
+                        {watchedList.length === 0 ? (
+                            <div style={{ textAlign: "center", padding: "4rem", color: "#94a3b8", border: "2px dashed rgba(255,255,255,0.1)", borderRadius: 20 }}>
+                                <p style={{ fontSize: 18 }}>Sua lista de assistidos está vazia.</p>
+                                <p style={{ fontSize: 14 }}>Vá até uma série e clique em "Marcar como Assistida".</p>
+                            </div>
+                        ) : (
+                            <div style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", // Cards um pouco maiores
+                                gap: "1.5rem"
+                            }}>
+                                {watchedList.map((item) => (
+                                    <div key={item.series_id} style={{ position: "relative", group: "true" }}>
+                                        
+                                        <Link 
+                                            to={`/series/${item.series_id}`} 
+                                            style={{ textDecoration: "none", display: "block" }}
+                                        >
+                                            <div style={{
+                                                borderRadius: 16,
+                                                overflow: "hidden",
+                                                boxShadow: "0 10px 25px rgba(0,0,0,0.6)",
+                                                border: "1px solid rgba(255,255,255,0.1)",
+                                                position: "relative",
+                                                aspectRatio: "2/3",
+                                                background: "#1e293b",
+                                                transition: "transform 0.2s ease",
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}
+                                            onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                                            >
+                                                {/* IMAGEM */}
+                                                {item.poster_path ? (
+                                                    <img 
+                                                        src={`https://image.tmdb.org/t/p/w300${item.poster_path}`} 
+                                                        alt={item.title}
+                                                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                                    />
+                                                ) : (
+                                                    <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontSize: 24 }}>🎬</div>
+                                                )}
+
+                                                {/* DATA DE VISUALIZAÇÃO (Overlay na parte inferior) */}
+                                                <div style={{
+                                                    position: "absolute",
+                                                    bottom: 0,
+                                                    left: 0,
+                                                    width: "100%",
+                                                    background: "linear-gradient(to top, rgba(0,0,0,0.9), transparent)",
+                                                    padding: "20px 10px 10px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "end"
+                                                }}>
+                                                    <span style={{ color: "#22c55e", fontSize: 11, fontWeight: "bold", display: "flex", alignItems: "center", gap: 4 }}>
+                                                        ✓ Visto em
+                                                    </span>
+                                                    <span style={{ color: "white", fontSize: 12, fontWeight: "600" }}>
+                                                        {formatDateSimple(item.added_at)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </Link>
+
+                                        {/* BOTÃO DE REMOVER (Lixeira Flutuante) */}
+                                        <button
+                                            onClick={(e) => handleRemoveFromList(e, item.series_id)}
+                                            title="Remover dos assistidos"
+                                            style={{
+                                                position: "absolute",
+                                                top: 8,
+                                                right: 8,
+                                                width: 32,
+                                                height: 32,
+                                                borderRadius: "50%",
+                                                background: "rgba(0,0,0,0.6)",
+                                                backdropFilter: "blur(4px)",
+                                                border: "1px solid rgba(239,68,68,0.5)",
+                                                color: "#ef4444",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                cursor: "pointer",
+                                                transition: "all 0.2s",
+                                                zIndex: 10 // Fica por cima do Link
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = "#ef4444";
+                                                e.currentTarget.style.color = "white";
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = "rgba(0,0,0,0.6)";
+                                                e.currentTarget.style.color = "#ef4444";
+                                            }}
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                        </button>
+
+                                        {/* Título fora do card (opcional, pode tirar se preferir só o poster) */}
+                                        <p style={{ marginTop: 8, fontSize: 14, fontWeight: "600", color: "#e2e8f0", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                            {item.title}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </section>
                 )}
             </div>
